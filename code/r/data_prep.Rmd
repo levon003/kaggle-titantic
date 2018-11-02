@@ -1,0 +1,91 @@
+---
+title: "Data Preparation"
+author: "Zachary Levonian"
+date: "11/02/2018"
+output: pdf_document
+---
+
+```{r}
+library(alr4)
+library(mice)  # for multiple imputation
+```
+
+```{r}
+train <- read.csv("../../data/raw/train.csv", stringsAsFactors=FALSE)
+test <- read.csv("../../data/raw/test.csv", stringsAsFactors=FALSE)
+```
+
+```{r}
+test$Survived = 2
+df <- rbind(train, test)
+```
+
+
+# Build factors from data
+
+```{r}
+df$fSex = factor(df$Sex)
+df$fEmbarked = factor(df$Embarked)
+```
+
+Now, we save all the columns to be used as potential features to a file.
+
+```{r}
+toWrite <- df[,c("PassengerId", "fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived")]
+write.table(toWrite, file="../../data/derived/factorized_data.csv",
+            row.names=FALSE, col.names=TRUE, 
+            sep=",", quote=FALSE)
+```
+
+
+# Data Exploration
+
+```{r}
+pairs(df[c("fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived")])
+```
+
+
+# Train a Model
+
+The code below demonstrates:
+ - Reading in the features
+ - Splitting the data into the training and test data
+ - Training a regression model
+ - Predicting the test set based on the trained model
+ - Saving the predictions in the Kaggle format for submission
+
+```{r}
+df <- read.csv("../../data/derived/factorized_data.csv", stringsAsFactors=TRUE)
+
+```
+
+
+```{r}
+train <- df[df$Survived != 2, ]
+test <- df[df$Survived == 2, ]
+```
+
+```{r}
+md <- glm(Survived ~ fSex + fEmbarked + Pclass + Age + SibSp + Parch + Fare, family="binomial", data=train)
+summary(md)
+```
+
+
+```{r}
+# predict on the test set
+y_pred <- predict(md, test, type="response")
+hist(y_pred)
+```
+
+```{r}
+# save the predictions to a file that can be submitted to Kaggle
+test$Survived = as.numeric(y_pred > 0.5)
+# while there shouldn't be NAs in the test output, 
+# here we apply a nasty hack to ensure any NAs are numeric in the output
+test[is.na(test)] <- 0
+toWrite <- test[,c("PassengerId", "Survived")]
+write.table(toWrite, file="../../data/derived/testModelPredictions.csv", 
+            row.names=FALSE, col.names=TRUE, 
+            sep=",", quote=FALSE)
+```
+
