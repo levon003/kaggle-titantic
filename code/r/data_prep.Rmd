@@ -13,6 +13,7 @@ library(mice)  # for multiple imputation
 library(BaylorEdPsych)  # For Little's MCAR test
 library(polycor)  # To compute correlation between heterogenous variables
 library(plotrix)  # For side-along histograms
+library(caret)  # For Cross Validation
 ```
 
 # Load data
@@ -28,6 +29,14 @@ Combine the data into a single dataframe to make it easier to work with.  I deno
 test$Survived = 2
 df <- rbind(train, test)
 ```
+
+# Load other derived data
+
+```{r}
+new_cols <- read.csv("../../data/derived/levon003_new_cols.csv", stringsAsFactors=TRUE)
+df <- merge(df, new_cols, by="PassengerId")
+```
+
 
 # Data exploration
 
@@ -65,10 +74,6 @@ We will assume the data is missing at random and impute a value for Thomas Store
 
 It is imputed alongside the Age data below.
 
-```{r}
-#TODO use mice to impute the data
-```
-
 ### fEmbarked missing data
 
 Is imputed alongside the Age data below.
@@ -90,7 +95,7 @@ mcar$p.value
 Little's MCAR test generates a test statistic against the null hypothesis that the missing data are MCAR.  Thus, we have evidence that we ought to reject the null hypothesis and the missing age data are MAR @enders_applied_2010.
 
 ```{r}
-age_little_df <- df[,c("fSex", "fEmbarked", "Pclass", "SibSp", "Parch", "Fare", "Survived")]
+age_little_df <- df[,c("fSex", "fEmbarked", "Pclass", "SibSp", "Parch", "Fare", "Survived", "name_title", "name_word_length", "name_char_length", "cabin_first_letter", "ticket_category")]
 age_little_df$AgeMissing = as.numeric(is.na(df["Age"]))
 hetcor(age_little_df)
 ```
@@ -149,7 +154,7 @@ sapply(df, function(x) sum(is.na(x)))
 Now, we save all the columns to be used as potential features to a file.
 
 ```{r}
-toWrite <- df[,c("PassengerId", "fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived")]
+toWrite <- df[,c("PassengerId", "fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived", "name_title", "name_word_length", "name_char_length", "cabin_first_letter", "ticket_category")]
 write.table(toWrite, file="../../data/derived/factorized_data.csv",
             row.names=FALSE, col.names=TRUE, 
             sep=",", quote=FALSE)
@@ -176,7 +181,12 @@ test <- df[df$Survived == 2, ]
 ```
 
 ```{r}
-md <- glm(Survived ~ fSex + fEmbarked + Pclass + Age + SibSp + Parch + Fare, family="binomial", data=train)
+# Get CV splits
+```
+
+
+```{r}
+md <- glm(Survived ~ fSex + fEmbarked + Pclass + Age + SibSp + Parch + Fare + name_title + name_word_length:name_char_length + cabin_first_letter + ticket_category, family="binomial", data=train)
 summary(md)
 ```
 
