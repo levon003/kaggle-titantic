@@ -3,7 +3,18 @@
 
 train <- read.csv("raw/train.csv", stringsAsFactors=FALSE)
 test <- read.csv("raw/test.csv", stringsAsFactors=FALSE)
+
+summary(train)
+str(train)
+
+
 View(train)
+## check NA values
+sapply(train, function(x) {sum(is.na(x))})
+sapply(test, function(x) {sum(is.na(x))})
+unique(train$SibSp)
+unique(train$Parch)
+
 train_w_age <- subset(train, !(is.na(train$Age)))
 train_wo_age <- subset(train, is.na(train$Age))
 fit<-lm(Age~Pclass+Survived+SibSp,data= train)
