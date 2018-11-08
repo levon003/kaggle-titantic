@@ -172,4 +172,129 @@ write.table(toWrite, file="../../data/derived/factorized_data.csv",
             sep=",", quote=FALSE)
 ```
 
+# Model comparison between different age imputations
+
+```{r}
+df <- read.csv("../../data/derived/factorized_data.csv", stringsAsFactors=TRUE)
+df$AgeOriginal <- imp$data$Age
+df$AgeMean <- mean_imputed
+df$AgeReg <- reg_imputed_age
+df$AgePmm <- complete(imp)$Age
+
+df_labeled <- df[df$Survived != 2, ]
+df_labeled$Survived = factor(df_labeled$Survived)
+df_unlabeled <- df[df$Survived == 2, ]
+
+classes <- df_labeled[, "Survived"]
+#survived <- df_labeled$Survived
+
+k = 50
+# for (age in list(df_labeled$AgeOriginal, df_labeled$AgeMean, df_labeled$AgeReg, df_labeled$AgePmm)) {
+#   accs <- vector("list", k)
+#   cv_splits <- createFolds(classes, k = k, returnTrain = TRUE)
+#   i <- 1
+#   for (cv_split in cv_splits) {
+#     age_input <- age[cv_split]
+#     df_train <- df_labeled[cv_split,]
+#     md <- with(df_train, glm(Survived ~ AgePmm + fSex + fEmbarked + Pclass + SibSp + Parch + Fare + name_title + name_word_length:name_char_length + cabin_first_letter + ticket_category, family="binomial"))
+#     df_test <- df_labeled[-cv_split,]
+#     test_pred_prob <- predict(md, newdata=df_test)
+#     test_pred <- as.numeric(test_pred_prob > 0.5)
+#     test_pred[is.na(test_pred)] = 0
+#     test_pred <- factor(test_pred, levels=c("0", "1"))
+#     #print(length(test_pred))
+#     #print(length(survived[-cv_split]))
+#     acc <- confusionMatrix(test_pred, survived[-cv_split])$overall["Accuracy"]
+#     accs[[i]] <- acc
+#     i <- i + 1
+#   }
+#   print(mean(as.numeric(accs)))
+# }
+
+accs <- vector("list", k)
+cv_splits <- createFolds(classes, k = k, returnTrain = TRUE)
+i <- 1
+for (cv_split in cv_splits) {
+  age_input <- age[cv_split]
+  df_train <- df_labeled[cv_split,]
+  md <- with(df_train, glm(Survived ~ AgeOriginal + fSex + fEmbarked + Pclass + SibSp + Parch + Fare + name_title + name_char_length + cabin_first_letter + ticket_category, family="binomial"))
+  df_test <- df_labeled[-cv_split,]
+  test_pred_prob <- predict(md, newdata=df_test)
+  test_pred <- as.numeric(test_pred_prob > 0.5)
+  test_pred[is.na(test_pred)] = 0
+  test_pred <- factor(test_pred, levels=c("0", "1"))
+  #print(length(test_pred))
+  #print(length(survived[-cv_split]))
+  acc <- confusionMatrix(test_pred, df_test$Survived)$overall["Accuracy"]
+  accs[[i]] <- acc
+  i <- i + 1
+}
+print("AgeOriginal")
+print(mean(as.numeric(accs)))
+
+accs <- vector("list", k)
+cv_splits <- createFolds(classes, k = k, returnTrain = TRUE)
+i <- 1
+for (cv_split in cv_splits) {
+  age_input <- age[cv_split]
+  df_train <- df_labeled[cv_split,]
+  md <- with(df_train, glm(Survived ~ AgeMean + fSex + fEmbarked + Pclass + SibSp + Parch + Fare + name_title + name_char_length + cabin_first_letter + ticket_category, family="binomial"))
+  df_test <- df_labeled[-cv_split,]
+  test_pred_prob <- predict(md, newdata=df_test)
+  test_pred <- as.numeric(test_pred_prob > 0.5)
+  test_pred[is.na(test_pred)] = 0
+  test_pred <- factor(test_pred, levels=c("0", "1"))
+  #print(length(test_pred))
+  #print(length(survived[-cv_split]))
+  acc <- confusionMatrix(test_pred, df_test$Survived)$overall["Accuracy"]
+  accs[[i]] <- acc
+  i <- i + 1
+}
+print("AgeMean")
+print(mean(as.numeric(accs)))
+
+accs <- vector("list", k)
+cv_splits <- createFolds(classes, k = k, returnTrain = TRUE)
+i <- 1
+for (cv_split in cv_splits) {
+  age_input <- age[cv_split]
+  df_train <- df_labeled[cv_split,]
+  md <- with(df_train, glm(Survived ~ AgeReg + fSex + fEmbarked + Pclass + SibSp + Parch + Fare + name_title + name_char_length + cabin_first_letter + ticket_category, family="binomial"))
+  df_test <- df_labeled[-cv_split,]
+  test_pred_prob <- predict(md, newdata=df_test)
+  test_pred <- as.numeric(test_pred_prob > 0.5)
+  test_pred[is.na(test_pred)] = 0
+  test_pred <- factor(test_pred, levels=c("0", "1"))
+  #print(length(test_pred))
+  #print(length(survived[-cv_split]))
+  acc <- confusionMatrix(test_pred, df_test$Survived)$overall["Accuracy"]
+  accs[[i]] <- acc
+  i <- i + 1
+}
+print("AgeReg")
+print(mean(as.numeric(accs)))
+  
+accs <- vector("list", k)
+cv_splits <- createFolds(classes, k = k, returnTrain = TRUE)
+i <- 1
+for (cv_split in cv_splits) {
+  age_input <- age[cv_split]
+  df_train <- df_labeled[cv_split,]
+  md <- with(df_train, glm(Survived ~ AgePmm + fSex + fEmbarked + Pclass + SibSp + Parch + Fare + name_title + name_char_length + cabin_first_letter + ticket_category, family="binomial"))
+  df_test <- df_labeled[-cv_split,]
+  test_pred_prob <- predict(md, newdata=df_test)
+  test_pred <- as.numeric(test_pred_prob > 0.5)
+  test_pred[is.na(test_pred)] = 0
+  test_pred <- factor(test_pred, levels=c("0", "1"))
+  #print(length(test_pred))
+  #print(length(survived[-cv_split]))
+  acc <- confusionMatrix(test_pred, df_test$Survived)$overall["Accuracy"]
+  accs[[i]] <- acc
+  i <- i + 1
+}
+print("AgePmm")
+print(mean(as.numeric(accs)))
+```
+
+
 # References
