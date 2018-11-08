@@ -52,7 +52,8 @@ df$fEmbarked = factor(df$Embarked)
 ## High-level summaries and visualization
 
 ```{r}
-pairs(df[c("fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived")])
+df_labeled$Survived
+pairs(df_labeled[c("Age", "SibSp", "Parch", "Fare", "Survived")], panel=panel.smooth)
 ```
 
 ## Missing data
