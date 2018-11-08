@@ -14,6 +14,8 @@ library(BaylorEdPsych)  # For Little's MCAR test
 library(polycor)  # To compute correlation between heterogenous variables
 library(plotrix)  # For side-along histograms
 library(caret)  # For Cross Validation
+library(glmnet)  # For generalized linear models
+library(xgboost)  # For gradient-boosted decision trees
 ```
 
 # Load data
@@ -34,7 +36,7 @@ df <- rbind(train, test)
 
 ```{r}
 new_cols <- read.csv("../../data/derived/levon003_new_cols.csv", stringsAsFactors=TRUE)
-df <- merge(df, new_cols, by="PassengerId")
+df <- merge(df, new_cols, by="PassengerId", all.y=TRUE, all.x=FALSE)
 ```
 
 
@@ -113,9 +115,12 @@ We use a univariate $t$-test to evaluate the fare, since it's numeric, and at th
 Now, we turn to tangible estimation of the missing data estimates.
 
 ```{r}
-age_df <- df[,c("Age", "fSex", "fEmbarked", "Pclass", "SibSp", "Parch", "Fare", "Survived")]
+age_df <- df[,c("Age", "fSex", "fEmbarked", "Pclass", "SibSp", "Parch", "Fare", "Survived", "name_title", "name_word_length", "cabin_first_letter")]
 imp <- mice(age_df, print=FALSE, m=20, seed=1, maxit=20)
 imputed_df <- complete(imp)
+
+reg_imp <- mice(age_df, print=FALSE, m=20, seed=1, maxit=20, method="norm.nob")
+reg_imputed_age <- complete(reg_imp)$Age
 
 #plot(imp)
 #fit <- with(imp, lm(Survived ~ Age))
@@ -123,9 +128,16 @@ imputed_df <- complete(imp)
 ```
 
 ```{r}
+age_pre <- imp$data$Age
+
+mean_imputed <- age_pre
+mean_imputed[is.na(mean_imputed)] = mean(mean_imputed, na.rm=TRUE)
+
 # plot of the change in the distribution of Age 
 # after imputation of NA values
-multhist(list(imp$data$Age, complete(imp)$Age))
+colors=c("grey30", "grey50", "grey70", "grey90")
+multhist(list(imp$data$Age, mean_imputed, reg_imputed_age, complete(imp)$Age), xlab="Passenger Age", ylab="Count", col=colors, legend.text=TRUE)
+legend(55, 400, legend=c("Missing Excluded", "Mean Imputation", "Stochastic Reg. Imp.", "Predictive Mean Matching"), col=colors, lty=c(1,1,1,1))
 ```
 
 
@@ -154,57 +166,8 @@ sapply(df, function(x) sum(is.na(x)))
 Now, we save all the columns to be used as potential features to a file.
 
 ```{r}
-toWrite <- df[,c("PassengerId", "fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "Survived", "name_title", "name_word_length", "name_char_length", "cabin_first_letter", "ticket_category")]
+toWrite <- df[,c("PassengerId", "Survived", "fSex", "fEmbarked", "Pclass", "Age", "SibSp", "Parch", "Fare", "name_title", "name_word_length", "name_char_length", "cabin_first_letter", "ticket_category")]
 write.table(toWrite, file="../../data/derived/factorized_data.csv",
-            row.names=FALSE, col.names=TRUE, 
-            sep=",", quote=FALSE)
-```
-
-# Train a Model
-
-The code below demonstrates:
- - Reading in the features
- - Splitting the data into the training and test data
- - Training a regression model
- - Predicting the test set based on the trained model
- - Saving the predictions in the Kaggle format for submission
-
-```{r}
-df <- read.csv("../../data/derived/factorized_data.csv", stringsAsFactors=TRUE)
-
-```
-
-
-```{r}
-train <- df[df$Survived != 2, ]
-test <- df[df$Survived == 2, ]
-```
-
-```{r}
-# Get CV splits
-```
-
-
-```{r}
-md <- glm(Survived ~ fSex + fEmbarked + Pclass + Age + SibSp + Parch + Fare + name_title + name_word_length:name_char_length + cabin_first_letter + ticket_category, family="binomial", data=train)
-summary(md)
-```
-
-
-```{r}
-# predict on the test set
-y_pred <- predict(md, test, type="response")
-hist(y_pred)
-```
-
-```{r}
-# save the predictions to a file that can be submitted to Kaggle
-test$Survived = as.numeric(y_pred > 0.5)
-# while there shouldn't be NAs in the test output, 
-# here we apply a nasty hack to ensure any NAs are numeric in the output
-test[is.na(test)] <- 0
-toWrite <- test[,c("PassengerId", "Survived")]
-write.table(toWrite, file="../../data/derived/testModelPredictions.csv", 
             row.names=FALSE, col.names=TRUE, 
             sep=",", quote=FALSE)
 ```
