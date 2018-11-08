@@ -22,7 +22,7 @@ View(Cleansed)
 
 # lm annova using diff features 
 
-m0 <- lm(Survived~ 1, Cleansed) #RSS - 210.73
+m0 <- glm(Survived~ 1, Cleansed) #RSS - 210.73
 m1 <- update(m0, ~ Pclass) #RSS - 186.58
 anova(m0,m1) # Adding Pclass lowers the RSS 
 
@@ -38,20 +38,20 @@ anova(m3,m4) # Adding SibSp lowers the RSS further
 m5 <- update(m3, ~ . + Parch) #RSS- 129.01
 anova(m3,m5) # Adding Parch to m3 lowers the RSS but not more than adding SibSp
 
-m7 <-   update(m3, ~ . + Fare) #RSS- 129.89
+m6 <-   update(m3, ~ . + Fare) #RSS- 129.89
 anova(m3,m7) # Adding Fare to m3 lowers the RSS just by 0.01
 
-m8 <- update(m3, ~ . + Parch+ SibSp) #RSS- 126.63
-anova(m4,m8) # Adding both Parch and SibSp to m3 lowers the RSS just by .10 when compared to m4
+m7 <- update(m3, ~ . + Parch+ SibSp) #RSS- 126.63
+anova(m4,m7) # Adding both Parch and SibSp to m3 lowers the RSS just by .10 when compared to m4
 
-m9 <- update(m8, ~ . + Fare) #RSS- 126.44
-anova(m8,m9) # Adding Fare to m8 lowers the RSS just by .19 when compared to m8
+m8 <- update(m7, ~ . + Fare) #RSS- 126.44
+anova(m7,m8) # Adding Fare to m8 lowers the RSS just by .19 when compared to m8
 
 #Least RSS is given by m9 
 
-m10 <- update(m9, ~ . +  Embarked_ + Embarked_C +  Embarked_Q +  Embarked_S) #RSS-  125.81
-anova(m9,m10)
+m9 <- update(m8, ~ . +  Embarked_ + Embarked_C +  Embarked_Q +  Embarked_S) #RSS-  125.81
+anova(m10,m9)
 #m10 further decreases RSS by .63
 
-summary(m10) #Multiple R-squared:  0.403,	Adjusted R-squared:  0.3969 
+summary(m9) #Multiple R-squared:  0.403,	Adjusted R-squared:  0.3969 
 
